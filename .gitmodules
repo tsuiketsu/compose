@@ -1,6 +1,6 @@
 [submodule "frontend"]
 	path = frontend
-	url = git@gitea:tsuiketsu/tsuika
+	url = git@github.com:tsuiketsu/tsuika
 [submodule "backend"]
 	path = backend
-	url = git@gitea:tsuiketsu/tsuika-api
+	url = git@github.com:tsuiketsu/tsuika-api
