@@ -60,7 +60,7 @@ services:
     build:
       context: ./frontend
       args:
-        VITE_API_BASE_URL: http://localhost:8000
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL}
         VITE_GENAI_API_KEY: ${VITE_GENAI_API_KEY}
     container_name: tsuika
     ports:
@@ -70,8 +70,4 @@ services:
 
 volumes:
   object_store:
-    name: tsuika-backend_minio-data
-    external: true
   postgres_data:
-    name: "tsuika-backend_db_data"
-    external: true
