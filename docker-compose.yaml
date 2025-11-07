@@ -1,0 +1,77 @@
+services:
+  minio:
+    image: minio/minio:latest
+    volumes:
+      - object_store:/data
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    command: server /data --console-address ":9001"
+    restart: unless-stopped
+    ports:
+      - 9000:9000
+      - 9001:9001
+
+  db:
+    image: postgres:17-alpine
+    command: "-d 1"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB_NAME}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: ./backend
+    container_name: tsuika-api
+    ports:
+      - "8000:8000"
+    depends_on:
+      - minio
+      - db
+    environment:
+      DOMAIN: ${DOMAIN:-localhost}
+      HOST_URL: ${HOST_URL}
+
+      DATABASE_URL: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db/${POSTGRES_DB_NAME}"
+
+      FRONTEND_ORIGIN: ${FRONTEND_ORIGIN}
+      CORS_ORIGIN_BROWSER_EXTENSION: ${CORS_ORIGIN_BROWSER_EXTENSION}
+
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      JWT_SECRET: ${JWT_SECRET}
+
+      S3_BUCKET_USE_SSL: ${S3_BUCKET_USE_SSL:-false}
+      S3_BUCKET_API_PORT: ${S3_BUCKET_API_PORT:-9000}
+      S3_BUCKET_ENDPOINT: ${S3_BUCKET_ENDPOINT:-localhost}
+      S3_BUCKET_URL: ${S3_BUCKET_URL:-http://localhost:9001}
+      S3_BUCKET_ACCESS_KEY: ${MINIO_ROOT_USER}
+      S3_BUCKET_KEY: ${MINIO_ROOT_PASSWORD}
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE_URL: http://localhost:8000
+        VITE_GENAI_API_KEY: ${VITE_GENAI_API_KEY}
+    container_name: tsuika
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+
+volumes:
+  object_store:
+    name: tsuika-backend_minio-data
+    external: true
+  postgres_data:
+    name: "tsuika-backend_db_data"
+    external: true
